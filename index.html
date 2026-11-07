@@ -222,9 +222,7 @@
   .consent-block{ display:flex; flex-direction:column; gap:14px; margin:6px 0 20px 0; }
   .consent-row{ display:flex; align-items:flex-start; gap:12px; font-size:0.94rem; line-height:1.5; color:var(--ink); cursor:pointer; }
   .consent-row input[type="checkbox"]{ width:20px; height:20px; margin-top:2px; flex:none; accent-color:var(--gold); cursor:pointer; }
-  .consent-row a{ color:var(--gold-light); text-decoration:underline; text-underline-offset:2px; }
   .optional-tag{ color:var(--ink-soft); font-size:0.84rem; }
-  .required-mark{ color:var(--gold-light); font-weight:700; }
 
   .submit-btn{
     width:100%; padding:18px; border-radius:12px; border:none; margin-top:10px;
@@ -507,10 +505,6 @@
                   <input type="checkbox" id="consent-emails">
                   <span>I agree to be e-mailed about future Social Club events <span class="optional-tag">(optional)</span></span>
                 </label>
-                <label class="consent-row">
-                  <input type="checkbox" id="consent-privacy">
-                  <span>I consent to my submitted data being collected and stored as outlined in the <a href="https://crlsc.ca/privacypolicy" target="_blank" rel="noopener">Privacy Policy</a>. <span class="required-mark" aria-hidden="true">*</span></span>
-                </label>
               </div>
 
               <button type="submit" class="submit-btn" id="submit-btn" disabled>Complete Registration</button>
@@ -581,7 +575,7 @@
   </section>
 </main>
 
-<footer>CNL Kids Christmas Party &middot; Petawawa Civic Centre (Upstairs) &middot; Questions? Contact <a href="mailto:crsocclb@cnl.ca">crsocclb@cnl.ca</a></footer>
+<footer>Questions? Contact <a href="mailto:crsocclb@cnl.ca">crsocclb@cnl.ca</a></footer>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
@@ -636,7 +630,6 @@
   const formView = document.getElementById("form-view");
   const confirmView = document.getElementById("confirm-view");
   const consentEmails = document.getElementById("consent-emails");
-  const consentPrivacy = document.getElementById("consent-privacy");
 
   let etransferConfirmed = false;
 
@@ -673,8 +666,7 @@
     const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailInput.value.trim());
     const partyOk = currentPartySize() >= 1;
     const paymentOk = etransferConfirmed === true;
-    const privacyOk = consentPrivacy.checked;
-    const ready = nameOk && emailOk && partyOk && paymentOk && privacyOk;
+    const ready = nameOk && emailOk && partyOk && paymentOk;
     submitBtn.disabled = !ready;
     submitBtn.classList.toggle("enabled", ready);
     if (!nameOk){
@@ -685,15 +677,12 @@
       helperText.textContent = "Select at least one ticket.";
     } else if (!paymentOk){
       helperText.textContent = "Confirm you've sent the e-transfer above to activate submission.";
-    } else if (!privacyOk){
-      helperText.textContent = "Please tick the Privacy Policy consent box to continue.";
     } else {
       helperText.textContent = "You're all set — confirm below.";
     }
   }
 
   [adultsSelect, childrenSelect].forEach(sel => sel.addEventListener("change", refreshTotals));
-  consentPrivacy.addEventListener("change", updateSubmitState);
   nameInput.addEventListener("input", updateSubmitState);
   emailInput.addEventListener("input", updateSubmitState);
 
@@ -826,7 +815,6 @@
       partySize: currentPartySize(),
       total: currentTotal(),
       emailOptIn: consentEmails.checked,
-      privacyConsent: true,
       timestamp: Date.now()
     };
 
