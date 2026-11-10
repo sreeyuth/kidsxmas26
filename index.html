@@ -513,6 +513,10 @@
 
               <div class="consent-block">
                 <label class="consent-row">
+                  <input type="checkbox" id="consent-data" required>
+                  <span>I consent to the collection of my registration information for this event. All data, except the email addresses of those who opt in to future Social Club emails, will be deleted 24 hours after the event.</span>
+                </label>
+                <label class="consent-row">
                   <input type="checkbox" id="consent-emails">
                   <span>I agree to be e-mailed about future Social Club events <span class="optional-tag">(optional)</span></span>
                 </label>
@@ -644,6 +648,7 @@
   const formView = document.getElementById("form-view");
   const confirmView = document.getElementById("confirm-view");
   const consentEmails = document.getElementById("consent-emails");
+  const consentData = document.getElementById("consent-data");
 
   function populateCountSelect(selectEl, max, defaultValue){
     for (let i = 0; i <= max; i++){
@@ -687,7 +692,8 @@
     const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailInput.value.trim());
     const partyOk = currentPartySize() >= 1;
     const paymentOk = paymentAgree.checked === true;
-    const ready = nameOk && emailOk && partyOk && paymentOk;
+    const consentOk = consentData.checked === true;
+    const ready = nameOk && emailOk && partyOk && paymentOk && consentOk;
     submitBtn.disabled = !ready;
     submitBtn.classList.toggle("enabled", ready);
     if (!nameOk){
@@ -698,6 +704,8 @@
       helperText.textContent = "Select at least one ticket.";
     } else if (!paymentOk){
       helperText.textContent = "Tick the payment agreement above to activate submission.";
+    } else if (!consentOk){
+      helperText.textContent = "Tick the data collection consent above to activate submission.";
     } else {
       helperText.textContent = "You're all set — confirm below.";
     }
@@ -714,6 +722,7 @@
     updateSubmitState();
   });
   paymentAgree.addEventListener("change", updateSubmitState);
+  consentData.addEventListener("change", updateSubmitState);
 
   const copyEmailBtn = document.getElementById("copy-email-btn");
   if (copyEmailBtn){
@@ -838,6 +847,7 @@
       total: currentTotal(),
       paymentMethod: paymentMethodSelect.value,
       emailOptIn: consentEmails.checked,
+      dataConsent: consentData.checked,
       timestamp: Date.now()
     };
 
