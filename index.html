@@ -189,6 +189,16 @@
   }
   .etransfer-note strong{ font-family:'JetBrains Mono',monospace; color:var(--gold); }
   .etransfer-note strong.emphasis-underline{ font-family:'Poppins',sans-serif; color:var(--ink); text-decoration:underline; text-underline-offset:2px; }
+  .payment-method-select{
+    width:100%; padding:15px 16px; border-radius:11px; border:1.5px solid var(--line);
+    font-family:'Poppins',sans-serif; font-size:1.05rem; font-weight:500; background:var(--panel-2); color:var(--ink);
+    cursor:pointer; transition:border-color .2s ease;
+  }
+  .payment-method-select:focus{ outline:none; border-color:var(--gold); }
+  .payment-method-select:focus-visible{ outline:2px solid var(--gold); outline-offset:1px; }
+  .payment-agree .consent-row{ font-size:1.02rem; line-height:1.6; }
+  .payment-agree .copy-row{ margin:10px 0 0 32px; }
+  .payment-agree .copy-row .copy-btn{ margin:0; }
   .copy-btn{
     font-family:'Poppins',sans-serif; font-weight:600; font-size:0.82rem; padding:4px 12px; border-radius:999px;
     border:1.3px solid var(--gold); background:transparent; color:var(--gold); cursor:pointer; margin:0 4px;
@@ -481,22 +491,23 @@
                 <span class="amount mono" id="total-amount">$0.00</span>
               </div>
 
-              <div id="etransfer-section">
-                <div class="etransfer-note">
-                  E-transfer <strong id="etransfer-amount">$0.00</strong> to Lauren Kinghorn at
-                  <strong>l.kinghorn87@gmail.com</strong>
-                  <button type="button" class="copy-btn" id="copy-email-btn" aria-label="Copy email address to clipboard">Copy</button>
-                  and <strong class="emphasis-underline">return to this page</strong> to complete your registration.
+              <div id="payment-section">
+                <div class="field">
+                  <label for="reg-payment-method">Payment type (cash or e-transfer)</label>
+                  <select id="reg-payment-method" class="payment-method-select">
+                    <option value="E-transfer" selected>E-transfer (recommended)</option>
+                    <option value="Cash">Cash</option>
+                  </select>
                 </div>
 
-                <div class="field">
-                  <fieldset>
-                    <legend>Have you done the e-transfer?</legend>
-                    <button type="button" class="confirm-toggle" id="etransfer-confirm-btn" aria-pressed="false">
-                      <span class="check-circle" aria-hidden="true"></span>
-                      Yes, I have completed the e-transfer
-                    </button>
-                  </fieldset>
+                <div class="etransfer-note payment-agree">
+                  <label class="consent-row">
+                    <input type="checkbox" id="payment-agree" required>
+                    <span id="payment-agree-text"></span>
+                  </label>
+                  <div class="copy-row" id="copy-email-row">
+                    <button type="button" class="copy-btn" id="copy-email-btn" aria-label="Copy e-transfer email address to clipboard">Copy email</button>
+                  </div>
                 </div>
               </div>
 
@@ -508,7 +519,7 @@
               </div>
 
               <button type="submit" class="submit-btn" id="submit-btn" disabled>Complete Registration</button>
-              <p class="helper-text" id="helper-text">Complete the e-transfer, then confirm above, to activate your submission.</p>
+              <p class="helper-text" id="helper-text">Choose a payment type and tick the agreement above to activate your submission.</p>
             </form>
           </div>
 
@@ -622,16 +633,17 @@
   const adultsSelect = document.getElementById("reg-adults");
   const childrenSelect = document.getElementById("reg-children");
   const totalAmountEl = document.getElementById("total-amount");
-  const etransferAmountEl = document.getElementById("etransfer-amount");
-  const confirmToggleBtn = document.getElementById("etransfer-confirm-btn");
+  const paymentMethodSelect = document.getElementById("reg-payment-method");
+  const paymentAgree = document.getElementById("payment-agree");
+  const paymentAgreeText = document.getElementById("payment-agree-text");
+  const copyEmailRow = document.getElementById("copy-email-row");
+  const ETRANSFER_EMAIL = "l.kinghorn87@gmail.com";
   const submitBtn = document.getElementById("submit-btn");
   const helperText = document.getElementById("helper-text");
   const form = document.getElementById("reg-form");
   const formView = document.getElementById("form-view");
   const confirmView = document.getElementById("confirm-view");
   const consentEmails = document.getElementById("consent-emails");
-
-  let etransferConfirmed = false;
 
   function populateCountSelect(selectEl, max, defaultValue){
     for (let i = 0; i <= max; i++){
@@ -657,15 +669,24 @@
   function refreshTotals(){
     const formatted = "$" + currentTotal().toFixed(2);
     totalAmountEl.textContent = formatted;
-    etransferAmountEl.textContent = formatted;
+    refreshPaymentInstructions();
     updateSubmitState();
+  }
+
+  function refreshPaymentInstructions(){
+    const amount = "$" + currentTotal().toFixed(2);
+    const isCash = paymentMethodSelect.value === "Cash";
+    paymentAgreeText.innerHTML = isCash
+      ? `I agree to pay <strong>${amount}</strong> in cash at the door or to Lauren Kinghorn before the event.`
+      : `I agree to e-transfer <strong>${amount}</strong> to Lauren Kinghorn at <strong>${ETRANSFER_EMAIL}</strong>`;
+    copyEmailRow.hidden = isCash;
   }
 
   function updateSubmitState(){
     const nameOk = nameInput.value.trim().length > 0;
     const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailInput.value.trim());
     const partyOk = currentPartySize() >= 1;
-    const paymentOk = etransferConfirmed === true;
+    const paymentOk = paymentAgree.checked === true;
     const ready = nameOk && emailOk && partyOk && paymentOk;
     submitBtn.disabled = !ready;
     submitBtn.classList.toggle("enabled", ready);
@@ -676,7 +697,7 @@
     } else if (!partyOk){
       helperText.textContent = "Select at least one ticket.";
     } else if (!paymentOk){
-      helperText.textContent = "Confirm you've sent the e-transfer above to activate submission.";
+      helperText.textContent = "Tick the payment agreement above to activate submission.";
     } else {
       helperText.textContent = "You're all set — confirm below.";
     }
@@ -686,17 +707,18 @@
   nameInput.addEventListener("input", updateSubmitState);
   emailInput.addEventListener("input", updateSubmitState);
 
-  confirmToggleBtn.addEventListener("click", () => {
-    etransferConfirmed = !etransferConfirmed;
-    confirmToggleBtn.classList.toggle("selected", etransferConfirmed);
-    confirmToggleBtn.setAttribute("aria-pressed", String(etransferConfirmed));
+  paymentMethodSelect.addEventListener("change", () => {
+    // The agreement wording changes with the payment type, so it must be re-ticked.
+    paymentAgree.checked = false;
+    refreshPaymentInstructions();
     updateSubmitState();
   });
+  paymentAgree.addEventListener("change", updateSubmitState);
 
   const copyEmailBtn = document.getElementById("copy-email-btn");
   if (copyEmailBtn){
     copyEmailBtn.addEventListener("click", async () => {
-      const email = "l.kinghorn87@gmail.com";
+      const email = ETRANSFER_EMAIL;
       try{
         await navigator.clipboard.writeText(email);
       }catch(err){
@@ -814,6 +836,7 @@
       children: counts.children,
       partySize: currentPartySize(),
       total: currentTotal(),
+      paymentMethod: paymentMethodSelect.value,
       emailOptIn: consentEmails.checked,
       timestamp: Date.now()
     };
@@ -836,9 +859,8 @@
     form.reset();
     adultsSelect.value = "0";
     childrenSelect.value = "0";
-    etransferConfirmed = false;
-    confirmToggleBtn.classList.remove("selected");
-    confirmToggleBtn.setAttribute("aria-pressed", "false");
+    paymentMethodSelect.value = "E-transfer";
+    paymentAgree.checked = false;
     refreshTotals();
     confirmView.hidden = true;
     formView.hidden = false;
@@ -961,6 +983,7 @@
           parts.length ? parts.join(" / ") : "\u2014",
           String(r.partySize || 0),
           "$" + (r.total || 0).toFixed(2),
+          r.paymentMethod || "\u2014",
           r.paymentDone === "Paid" ? "Paid" : "Payment pending review"
         ];
       });
@@ -970,7 +993,7 @@
       const totalAmount = regs.reduce((s,r) => s + (r.total||0), 0);
 
       doc.autoTable({
-        head: [["Attendance","Name","Email","Tickets","Party Size","Total Amount","Payment"]],
+        head: [["Attendance","Name","Email","Tickets","Party Size","Total Amount","Payment Method","Payment"]],
         body: body,
         startY: 28,
         styles: { fontSize: 8 },
@@ -1019,7 +1042,7 @@
     if (regs.length === 0){
       wrap.innerHTML = `<div class="empty-state">
         <svg viewBox="0 0 24 24" fill="none"><path d="M4 19V5a2 2 0 0 1 2-2h9l5 5v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z" stroke="currentColor" stroke-width="1.5"/></svg>
-        <p>No registrations yet. They'll appear here as guests confirm their e-transfer.</p>
+        <p>No registrations yet. They'll appear here as guests complete the form.</p>
       </div>`;
       return;
     }
@@ -1050,6 +1073,7 @@
         <td>${escapeHtml(r.email || "—")}</td>
         <td>${r.partySize}${breakdown}</td>
         <td class="amt">$${(r.total||0).toFixed(2)}</td>
+        <td>${escapeHtml(r.paymentMethod || "—")}</td>
         <td>${r.emailOptIn === true ? "Yes" : (r.emailOptIn === false ? "No" : "—")}</td>
         <td>${paymentCell}</td>
         <td>${paymentUnlocked ? `<button class="del-btn" data-id="${r.id}">Delete</button>` : ""}</td>
@@ -1057,7 +1081,7 @@
     });
 
     wrap.innerHTML = `<table class="roster">
-      <thead><tr><th>Name</th><th>Email</th><th>Party Size</th><th>Total Amount</th><th>Future Emails</th><th>Registration Status</th><th></th></tr></thead>
+      <thead><tr><th>Name</th><th>Email</th><th>Party Size</th><th>Total Amount</th><th>Payment Method</th><th>Future Emails</th><th>Registration Status</th><th></th></tr></thead>
       <tbody>${rows}</tbody>
     </table>`;
 
